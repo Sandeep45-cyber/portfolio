@@ -6,15 +6,11 @@ const CanvasSimulation: React.FC = () => {
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return;
 
-        // Set canvas dimensions
         let width = 400;
         let height = 400;
-
-        // Scale for high DPI displays
         const dpr = window.devicePixelRatio || 1;
         canvas.width = width * dpr;
         canvas.height = height * dpr;
@@ -24,106 +20,129 @@ const CanvasSimulation: React.FC = () => {
 
         let particles: Particle[] = [];
         let animationFrameId: number;
-        let mouse = { x: -1000, y: -1000, radius: 100 };
+        let mouse = { x: -1000, y: -1000, radius: 60 };
 
         class Particle {
             x: number;
             y: number;
             vx: number;
             vy: number;
-            radius: number;
             baseX: number;
             baseY: number;
+            color: string;
 
-            constructor(x: number, y: number) {
-                this.x = x;
-                this.y = y;
+            constructor(x: number, y: number, color: string) {
+                // Start slightly randomized for an initial assembly effect
+                this.x = x + (Math.random() - 0.5) * 50;
+                this.y = y + (Math.random() - 0.5) * 50;
                 this.baseX = x;
                 this.baseY = y;
-                this.vx = (Math.random() - 0.5) * 1;
-                this.vy = (Math.random() - 0.5) * 1;
-                this.radius = Math.random() * 2 + 1;
+                this.vx = 0;
+                this.vy = 0;
+                this.color = color;
             }
 
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Bounce off edges
-                if (this.x < 0 || this.x > width) this.vx = -this.vx;
-                if (this.y < 0 || this.y > height) this.vy = -this.vy;
-
-                // Mouse interaction
+                // Calculate distance from mouse
                 let dx = mouse.x - this.x;
                 let dy = mouse.y - this.y;
                 let distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < mouse.radius) {
-                    const forceDirectionX = dx / distance;
-                    const forceDirectionY = dy / distance;
-                    const force = (mouse.radius - distance) / mouse.radius;
-                    const directionX = forceDirectionX * force * -2;
-                    const directionY = forceDirectionY * force * -2;
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
 
-                    this.vx += directionX;
-                    this.vy += directionY;
+                const maxDistance = mouse.radius;
+                let force = (maxDistance - distance) / maxDistance;
+
+                if (distance < maxDistance) {
+                    // Repel from mouse
+                    this.vx -= forceDirectionX * force * 3;
+                    this.vy -= forceDirectionY * force * 3;
+                } else {
+                    // Spring back to base position
+                    this.vx -= (this.x - this.baseX) * 0.1;
+                    this.vy -= (this.y - this.baseY) * 0.1;
                 }
 
-                // Apply friction
-                this.vx *= 0.98;
-                this.vy *= 0.98;
+                // Add friction so they settle
+                this.vx *= 0.8;
+                this.vy *= 0.8;
 
-                // Pull back to center slightly if drifting too fast
-                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                if (speed < 0.2) {
-                    this.vx += (Math.random() - 0.5) * 0.1;
-                    this.vy += (Math.random() - 0.5) * 0.1;
-                } else if (speed > 2) {
-                    this.vx *= 0.5;
-                    this.vy *= 0.5;
-                }
+                this.x += this.vx;
+                this.y += this.vy;
             }
 
             draw() {
                 if (!ctx) return;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(100, 255, 218, 0.5)';
-                ctx.fill();
-                ctx.closePath();
+                ctx.fillStyle = this.color;
+                // Draw as a small horizontal dash to mimic the reference image style
+                ctx.fillRect(this.x, this.y, 4, 1.5);
             }
         }
 
         const init = () => {
             particles = [];
-            const numberOfParticles = 80;
-            for (let i = 0; i < numberOfParticles; i++) {
-                const x = Math.random() * width;
-                const y = Math.random() * height;
-                particles.push(new Particle(x, y));
-            }
-        };
 
-        const connect = () => {
-            let opacityValue = 1;
-            for (let a = 0; a < particles.length; a++) {
-                for (let b = a; b < particles.length; b++) {
-                    let distance =
-                        ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x)) +
-                        ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
+            const image = new Image();
 
-                    if (distance < 6000) {
-                        opacityValue = 1 - (distance / 6000);
-                        if (!ctx) return;
-                        ctx.strokeStyle = `rgba(100, 255, 218, ${opacityValue * 0.2})`;
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(particles[a].x, particles[a].y);
-                        ctx.lineTo(particles[b].x, particles[b].y);
-                        ctx.stroke();
+            image.onload = () => {
+                // Use an offscreen canvas to scale down the image to fit the 400x400 container
+                // This gets us the "pixelated" data array we need for particles
+                const offscreenCanvas = document.createElement('canvas');
+                const offCtx = offscreenCanvas.getContext('2d');
+                if (!offCtx) return;
+
+                // Scale width to ~100px so we get enough particles but not too many that it lags
+                const targetWidth = 100;
+                const scale = targetWidth / image.width;
+                const targetHeight = image.height * scale;
+
+                offscreenCanvas.width = targetWidth;
+                offscreenCanvas.height = targetHeight;
+                offCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+                const imageData = offCtx.getImageData(0, 0, targetWidth, targetHeight);
+                const data = imageData.data;
+
+                // Map 1 offscreen pixel to visible pixels
+                const step = 2; // Check every 2nd pixel (lower number = denser particles)
+                const drawScale = 400 / targetWidth; // Multiplier to fill the 400px canvas
+
+                // Adjust offsets to perfectly center the portrait
+                const offsetX = (width - (targetWidth * drawScale)) / 2;
+                const offsetY = (height - (targetHeight * drawScale)) / 2;
+
+                for (let y = 0; y < targetHeight; y += step) {
+                    for (let x = 0; x < targetWidth; x += step) {
+                        const index = (y * targetWidth + x) * 4;
+                        const r = data[index];
+                        const g = data[index + 1];
+                        const b = data[index + 2];
+                        const alpha = data[index + 3];
+
+                        // Brightness filter: Ignore solid white backgrounds and fully transparent areas
+                        const brightness = (r + g + b) / 3;
+
+                        if (alpha > 128 && brightness < 240) {
+                            const posX = (x * drawScale) + offsetX;
+                            const posY = (y * drawScale) + offsetY;
+
+                            // Map brightness to opacity (darker areas = more solid particle)
+                            const opacity = Math.max(0.3, 1 - (brightness / 255));
+                            const color = `rgba(100, 255, 218, ${opacity})`; // Theme accent color
+
+                            particles.push(new Particle(posX, posY, color));
+                        }
                     }
                 }
-            }
+                console.log(`Generated ${particles.length} particles from image. targetWidth: ${targetWidth}, targetHeight: ${targetHeight}`);
+            };
+
+            image.onerror = (err) => {
+                console.error("Failed to load image for particle simulation", err);
+            };
+
+            image.src = "/EFA56684-B7A0-4837-99CD-5FE31E7A55AD.PNG"; // User's profile photo
         };
 
         const animate = () => {
@@ -133,7 +152,6 @@ const CanvasSimulation: React.FC = () => {
                 particles[i].update();
                 particles[i].draw();
             }
-            connect();
             animationFrameId = requestAnimationFrame(animate);
         };
 
