@@ -20,7 +20,13 @@ const CanvasSimulation: React.FC = () => {
 
         let particles: Particle[] = [];
         let animationFrameId: number;
-        let mouse = { x: -1000, y: -1000, radius: 32 };
+        let mouse = {
+            x: -1000,
+            y: -1000,
+            radius: 14, // force field outside the cursor collider (smaller interaction)
+            colliderRadius: 8, // invisible mouse circle
+            outsideBuffer: 18, // keep influence a bit outside the canvas circle
+        };
 
         class Particle {
             x: number;
@@ -30,6 +36,7 @@ const CanvasSimulation: React.FC = () => {
             baseX: number;
             baseY: number;
             color: string;
+            trail: Array<{ x: number; y: number }>;
 
             constructor(x: number, y: number, color: string) {
                 // Start slightly randomized for an initial assembly effect
@@ -40,6 +47,7 @@ const CanvasSimulation: React.FC = () => {
                 this.vx = 0;
                 this.vy = 0;
                 this.color = color;
+                this.trail = [];
             }
 
             update() {
@@ -47,26 +55,33 @@ const CanvasSimulation: React.FC = () => {
                 let dx = mouse.x - this.x;
                 let dy = mouse.y - this.y;
                 let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance === 0) distance = 0.001;
 
                 let forceDirectionX = dx / distance;
                 let forceDirectionY = dy / distance;
 
-                const maxDistance = mouse.radius;
-                let force = (maxDistance - distance) / maxDistance;
+                const edgeDistance = Math.max(0, distance - mouse.colliderRadius);
+                const maxDistance = mouse.radius + mouse.outsideBuffer;
+                const force = Math.max(0, (maxDistance - edgeDistance) / maxDistance);
 
-                if (distance < maxDistance) {
+                if (edgeDistance < maxDistance) {
                     // Repel from mouse
-                    this.vx -= forceDirectionX * force * 3;
-                    this.vy -= forceDirectionY * force * 3;
+                    this.vx -= forceDirectionX * force * 1.2;
+                    this.vy -= forceDirectionY * force * 1.2;
                 } else {
                     // Spring back to base position
-                    this.vx -= (this.x - this.baseX) * 0.1;
-                    this.vy -= (this.y - this.baseY) * 0.1;
+                    this.vx -= (this.x - this.baseX) * 0.055;
+                    this.vy -= (this.y - this.baseY) * 0.055;
                 }
 
                 // Add friction so they settle
-                this.vx *= 0.8;
-                this.vy *= 0.8;
+                this.vx *= 0.9;
+                this.vy *= 0.9;
+
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > 3) {
+                    this.trail.shift();
+                }
 
                 this.x += this.vx;
                 this.y += this.vy;
@@ -74,9 +89,19 @@ const CanvasSimulation: React.FC = () => {
 
             draw() {
                 if (!ctx) return;
+
+                for (let i = 0; i < this.trail.length; i++) {
+                    const point = this.trail[i];
+                    const alpha = (i + 1) / this.trail.length;
+                    ctx.fillStyle = `rgba(88, 230, 198, ${0.05 + alpha * 0.12})`;
+                    ctx.fillRect(point.x - 0.5, point.y, 5.5, 2.2);
+                }
+
+                // Slight glow pass for a thicker, playful dash look.
+                ctx.fillStyle = 'rgba(88, 230, 198, 0.1)';
+                ctx.fillRect(this.x - 1, this.y - 0.5, 7, 3);
                 ctx.fillStyle = this.color;
-                // Draw as a small horizontal dash to mimic the reference image style
-                ctx.fillRect(this.x, this.y, 4, 1.5);
+                ctx.fillRect(this.x, this.y, 5, 2);
             }
         }
 
@@ -128,8 +153,8 @@ const CanvasSimulation: React.FC = () => {
                             const posY = (y * drawScale) + offsetY;
 
                             // Map brightness to opacity (darker areas = more solid particle)
-                            const opacity = Math.max(0.3, 1 - (brightness / 255));
-                            const color = `rgba(100, 255, 218, ${opacity})`; // Theme accent color
+                            const opacity = Math.max(0.08, (1 - (brightness / 255)) * 0.68);
+                            const color = `rgba(88, 230, 198, ${opacity})`; // Dimmer accent for closer reference look
 
                             particles.push(new Particle(posX, posY, color));
                         }
@@ -148,6 +173,7 @@ const CanvasSimulation: React.FC = () => {
         const animate = () => {
             if (!ctx) return;
             ctx.clearRect(0, 0, width, height);
+
             for (let i = 0; i < particles.length; i++) {
                 particles[i].update();
                 particles[i].draw();
@@ -155,10 +181,26 @@ const CanvasSimulation: React.FC = () => {
             animationFrameId = requestAnimationFrame(animate);
         };
 
-        const handleMouseMove = (e: MouseEvent) => {
+        const setPointerPosition = (clientX: number, clientY: number) => {
             const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
+            mouse.x = clientX - rect.left;
+            mouse.y = clientY - rect.top;
+        };
+
+        const handleMouseMove = (e: MouseEvent) => {
+            setPointerPosition(e.clientX, e.clientY);
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            const touch = e.touches[0];
+            if (!touch) return;
+            setPointerPosition(touch.clientX, touch.clientY);
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            const touch = e.touches[0];
+            if (!touch) return;
+            setPointerPosition(touch.clientX, touch.clientY);
         };
 
         const handleMouseLeave = () => {
@@ -166,7 +208,11 @@ const CanvasSimulation: React.FC = () => {
             mouse.y = -1000;
         }
 
-        canvas.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('touchstart', handleTouchStart, { passive: true });
+        window.addEventListener('touchmove', handleTouchMove, { passive: true });
+        window.addEventListener('touchend', handleMouseLeave, { passive: true });
+        window.addEventListener('touchcancel', handleMouseLeave, { passive: true });
         canvas.addEventListener('mouseleave', handleMouseLeave);
 
         init();
@@ -174,7 +220,11 @@ const CanvasSimulation: React.FC = () => {
 
         return () => {
             cancelAnimationFrame(animationFrameId);
-            canvas.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleMouseLeave);
+            window.removeEventListener('touchcancel', handleMouseLeave);
             canvas.removeEventListener('mouseleave', handleMouseLeave);
         };
     }, []);
@@ -183,7 +233,7 @@ const CanvasSimulation: React.FC = () => {
         <canvas
             ref={canvasRef}
             className="simulation-container"
-            style={{ cursor: 'crosshair', borderRadius: '50%' }}
+            style={{ cursor: 'crosshair', borderRadius: '50%', touchAction: 'none' }}
         />
     );
 };

@@ -5,7 +5,7 @@ import CanvasSimulation from './CanvasSimulation';
 const Hero = () => {
     const [text, setText] = useState('');
     const [isTypingComplete, setIsTypingComplete] = useState(false);
-    const fullText = "hi, sandeep here.";
+    const fullText = "hi! sandeep here.";
 
     useEffect(() => {
         let timeout: ReturnType<typeof setTimeout>;
@@ -56,24 +56,43 @@ const Hero = () => {
 
     const cursorStyles = {
         display: 'inline-block',
-        width: '8px',
-        height: '0.9em',
-        backgroundColor: 'var(--accent-color)',
+        width: '14px',
+        height: '1em',
+        background: 'linear-gradient(180deg, #8dffe7 0%, #64ffda 45%, #2beac7 100%)',
         marginLeft: '5px',
-        animation: 'blink 1s step-end infinite',
+        borderRadius: '2px',
+        boxShadow: '0 0 14px rgba(100, 255, 218, 0.65)',
+        animation: 'blink 0.9s step-end infinite, cursorPop 1.6s ease-in-out infinite',
+        verticalAlign: 'baseline' as const,
     };
 
     return (
-        <section id="home" style={containerStyles}>
+        <section id="home" className="hero-section" style={containerStyles}>
             <style>
                 {`
           @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
           }
+          @keyframes cursorPop {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.08); }
+          }
           @media (max-width: 900px) {
+            .hero-section {
+              flex-direction: column-reverse !important;
+              align-items: flex-start !important;
+              justify-content: center !important;
+              min-height: auto !important;
+              padding-top: 90px !important;
+            }
             .hero-canvas-container {
-               display: none !important;
+              width: 100%;
+              justify-content: flex-start !important;
+            }
+            .hero-canvas-container canvas {
+              width: min(72vw, 280px) !important;
+              height: min(72vw, 280px) !important;
             }
           }
         `}
@@ -92,11 +111,11 @@ const Hero = () => {
 
             {/* Text Content (Right Side) */}
             <div style={textContainerStyles}>
-                <div style={{ ...titleStyles, display: 'flex', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-primary)' }}>
-                        {text.slice(0, 4)}<span style={{ color: 'var(--accent-color)' }}>{text.slice(4)}</span>
+                <div style={{ ...titleStyles, whiteSpace: 'nowrap' as const }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+                        <span style={{ color: 'var(--text-primary)' }}>{text}</span>
+                        <span style={cursorStyles} />
                     </span>
-                    <span style={cursorStyles} />
                 </div>
 
                 {isTypingComplete && (
