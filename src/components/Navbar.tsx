@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,7 +36,7 @@ const Navbar = () => {
     fontFamily: 'var(--font-sans)',
   };
 
-  const navItemVariants = {
+  const navItemVariants: Variants = {
     hidden: { y: -20, opacity: 0 },
     visible: (i: number) => ({
       y: 0,
@@ -51,9 +51,9 @@ const Navbar = () => {
 
   return (
     <nav style={navStyles}>
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
         style={{ color: 'var(--accent-color)', fontWeight: 'bold', fontSize: '20px' }}
       >

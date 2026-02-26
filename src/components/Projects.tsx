@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { Folder, Github, ExternalLink } from 'lucide-react';
 
 const Projects = () => {
@@ -41,7 +41,7 @@ const Projects = () => {
         },
     ];
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
@@ -51,7 +51,7 @@ const Projects = () => {
         }
     };
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { y: 20, opacity: 0 },
         visible: {
             y: 0,
