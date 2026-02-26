@@ -55,9 +55,15 @@ const Navbar = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        style={{ color: 'var(--accent-color)', fontWeight: 'bold', fontSize: '20px' }}
+        style={{ display: 'flex', alignItems: 'center' }}
       >
-        <a href="#home" style={{ color: 'var(--accent-color)' }}>SC</a>
+        <a href="#home" style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src="/image.png"
+            alt="Logo"
+            style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
+          />
+        </a>
       </motion.div>
 
       <ul style={{ display: 'flex', alignItems: 'center' }}>
