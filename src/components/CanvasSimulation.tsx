@@ -20,7 +20,7 @@ const CanvasSimulation: React.FC = () => {
 
         let particles: Particle[] = [];
         let animationFrameId: number;
-        let mouse = { x: -1000, y: -1000, radius: 60 };
+        let mouse = { x: -1000, y: -1000, radius: 32 };
 
         class Particle {
             x: number;
