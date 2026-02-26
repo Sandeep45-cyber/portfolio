@@ -2,6 +2,10 @@
 
 A sleek, interactive, and modern portfolio website built to showcase my experience in software engineering, generative AI, and data pipelines. The design features a smooth typing animation, a dynamic HTML5 Canvas particle simulation, responsive layouts, and interactive components.
 
+
+<img width="1374" height="711" alt="image" src="https://github.com/user-attachments/assets/6cca60c4-53b7-4775-b970-66049761e0ce" />
+
+
 ## 🚀 Tech Stack
 
 *   **Framework:** [React 18](https://react.dev/)
