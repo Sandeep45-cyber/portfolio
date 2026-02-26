@@ -56,4 +56,4 @@ To run this project locally, ensure you have [Node.js](https://nodejs.org/) inst
 *   `public/`: Static assets, including the profile image.
 
 ## 🌐 Live URL
-*(Add your Vercel or GitHub Pages link here once deployed!)*
+https://sandeep-chinta.vercel.app/
