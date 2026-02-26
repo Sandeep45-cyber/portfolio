@@ -61,9 +61,33 @@ const Navbar = () => {
   };
 
   return (
-    <nav style={navStyles}>
+    <>
+      <style>
+        {`
+          @media (max-width: 768px) {
+            .top-nav {
+              padding: 0 18px !important;
+            }
+            .top-nav .brand {
+              margin-right: 10px !important;
+            }
+            .top-nav .brand span {
+              font-size: 14px !important;
+            }
+            .top-nav .nav-link {
+              margin: 0 8px !important;
+              font-size: 12px !important;
+            }
+            .top-nav .nav-icons {
+              display: none !important;
+            }
+          }
+        `}
+      </style>
+      <nav className="top-nav" style={navStyles}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <motion.div
+          className="brand"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -92,6 +116,7 @@ const Navbar = () => {
       </div>
 
       <motion.div
+        className="nav-icons"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.5 }}
@@ -108,6 +133,7 @@ const Navbar = () => {
         </a>
       </motion.div>
     </nav>
+    </>
   );
 };
 

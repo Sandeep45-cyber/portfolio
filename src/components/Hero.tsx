@@ -80,19 +80,28 @@ const Hero = () => {
           }
           @media (max-width: 900px) {
             .hero-section {
-              flex-direction: column-reverse !important;
+              flex-direction: column !important;
               align-items: flex-start !important;
-              justify-content: center !important;
+              justify-content: flex-start !important;
               min-height: auto !important;
-              padding-top: 90px !important;
+              padding-top: 104px !important;
+              gap: 18px !important;
+            }
+            .hero-text-container,
+            .hero-canvas-container {
+              flex: none !important;
+              width: 100%;
+            }
+            .hero-text-container {
+              order: 2;
             }
             .hero-canvas-container {
-              width: 100%;
-              justify-content: flex-start !important;
+              order: 1;
+              justify-content: center !important;
             }
             .hero-canvas-container canvas {
-              width: min(72vw, 280px) !important;
-              height: min(72vw, 280px) !important;
+              width: min(64vw, 230px) !important;
+              height: min(64vw, 230px) !important;
             }
           }
         `}
@@ -110,7 +119,7 @@ const Hero = () => {
             </motion.div>
 
             {/* Text Content (Right Side) */}
-            <div style={textContainerStyles}>
+            <div className="hero-text-container" style={textContainerStyles}>
                 <div style={{ ...titleStyles, whiteSpace: 'nowrap' as const }}>
                     <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
                         <span style={{ color: 'var(--text-primary)' }}>{text}</span>
